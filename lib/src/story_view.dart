@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'dart:developer';
 
 import 'package:better_player/better_player.dart';
 
@@ -258,7 +259,7 @@ class _StoryImagePlayer extends StatefulWidget {
 }
 
 class _StoryImagePlayerState extends State<_StoryImagePlayer> {
-  late CachedNetworkImageProvider cachedNetworkImageProvider;
+  late CachedNetworkImageProvider cachedNetworkImage;
 
   @override
   void initState() {
@@ -270,20 +271,23 @@ class _StoryImagePlayerState extends State<_StoryImagePlayer> {
       // widget.onPlay(0);
     });
 
-    cachedNetworkImageProvider = CachedNetworkImageProvider(widget.imageUrl)
-        .resolve(const ImageConfiguration())
-        .addListener(ImageStreamListener((image, synchronousCall) {
-      WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-        // 5 second view time for image only story
-        widget.onLoad(const Duration(seconds: 5));
-        widget.onPlay(0);
-      });
-    }));
+    cachedNetworkImage = CachedNetworkImageProvider(widget.imageUrl)
+      ..resolve(const ImageConfiguration())
+          .addListener(ImageStreamListener((_, __) {
+        WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+          // 5 second view time for image only story
+          widget.onLoad(const Duration(seconds: 5));
+          widget.onPlay(0);
+        });
+      }));
   }
 
   @override
   Widget build(BuildContext context) {
     return CachedNetworkImage(
+      imageBuilder: (context, imageProvider) {
+        return Image(image: cachedNetworkImage);
+      },
       imageUrl: widget.imageUrl,
       placeholder: (_, __) => const LoadingIndicator(),
     );
