@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:better_player/better_player.dart';
+
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../flutter_story.dart';
 import 'loading_indicator.dart';
@@ -224,9 +228,9 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
     super.initState();
 
     final betterPlayerDataSource = BetterPlayerDataSource.network(
-        widget.videoUrl,
-        cacheConfiguration:
-            const BetterPlayerCacheConfiguration(useCache: true));
+      widget.videoUrl,
+      cacheConfiguration: const BetterPlayerCacheConfiguration(useCache: true),
+    );
 
     const betterPlayerConfiguration = BetterPlayerConfiguration(
       controlsConfiguration: BetterPlayerControlsConfiguration(
@@ -312,18 +316,28 @@ class _StoryImagePlayer extends StatefulWidget {
 class _StoryImagePlayerState extends State<_StoryImagePlayer> {
   late CachedNetworkImageProvider cachedNetworkImage;
 
+  late Future<File> future;
+
   @override
   void initState() {
     super.initState();
 
-    cachedNetworkImage = CachedNetworkImageProvider(widget.imageUrl)
-      ..resolve(const ImageConfiguration())
-          .addListener(ImageStreamListener((_, __) {
+    future = DefaultCacheManager().getSingleFile(widget.imageUrl)
+      ..then((_) {
         WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
           widget.onLoad(defaultStoryDuration);
           widget.onPlay(0);
         });
-      }));
+      });
+
+    // cachedNetworkImage = CachedNetworkImageProvider(widget.imageUrl)
+    //   ..resolve(const ImageConfiguration())
+    //       .addListener(ImageStreamListener((_, __) {
+    //     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+    //       widget.onLoad(defaultStoryDuration);
+    //       widget.onPlay(0);
+    //     });
+    //   }));
   }
 
   @override
@@ -337,13 +351,25 @@ class _StoryImagePlayerState extends State<_StoryImagePlayer> {
       onLongPressUp: () async {
         widget.resumeProgressBar();
       },
-      child: CachedNetworkImage(
-        imageBuilder: (context, imageProvider) {
-          return Image(image: cachedNetworkImage);
+      child: FutureBuilder<File>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Icon(Icons.error);
+          }
+          if (snapshot.hasData) {
+            return Image.file(snapshot.data!);
+          }
+          return const LoadingIndicator();
         },
-        imageUrl: widget.imageUrl,
-        placeholder: (_, __) => const LoadingIndicator(),
       ),
+      // child: CachedNetworkImage(
+      //   imageBuilder: (context, imageProvider) {
+      //     return Image(image: cachedNetworkImage);
+      //   },
+      //   imageUrl: widget.imageUrl,
+      //   placeholder: (_, __) => const LoadingIndicator(),
+      // ),
     );
   }
 }
