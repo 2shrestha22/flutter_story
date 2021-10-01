@@ -8,6 +8,8 @@ import '../flutter_story.dart';
 import 'loading_indicator.dart';
 import 'story_progress_bar.dart';
 
+const defaultStoryDuration = Duration(seconds: 5);
+
 // enum StoryEvents {
 //   leftTap,
 //   rightTap,
@@ -33,10 +35,13 @@ class _StoryViewState extends State<StoryView>
 
   late AnimationController animationController;
 
+  late bool showProgressBar;
+
   @override
   void initState() {
     super.initState();
     indexToPlay = 0;
+    showProgressBar = true;
 
     storyWidgets = widget.storyContents.map((e) => getStoryWidgets(e)).toList();
 
@@ -83,12 +88,14 @@ class _StoryViewState extends State<StoryView>
   _pauseProgressBar() {
     setState(() {
       animationController.stop();
+      showProgressBar = false;
     });
   }
 
   _resumeProgressBar() {
     setState(() {
       animationController.forward();
+      showProgressBar = true;
     });
   }
 
@@ -147,16 +154,20 @@ class _StoryViewState extends State<StoryView>
           top: 10,
           left: 0,
           right: 0,
-          child: AnimatedBuilder(
-            animation: animationController,
-            builder: (context, child) {
-              return StoryProgressBar(
-                gap: 3,
-                progress: animationController.value,
-                length: widget.storyContents.length,
-                activeBar: indexToPlay,
-              );
-            },
+          child: AnimatedOpacity(
+            opacity: showProgressBar ? 1 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: AnimatedBuilder(
+              animation: animationController,
+              builder: (context, child) {
+                return StoryProgressBar(
+                  gap: 3,
+                  progress: animationController.value,
+                  length: widget.storyContents.length,
+                  activeBar: indexToPlay,
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -305,18 +316,11 @@ class _StoryImagePlayerState extends State<_StoryImagePlayer> {
   void initState() {
     super.initState();
 
-    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-      // 5 second view time for image only story
-      // widget.onLoad(const Duration(seconds: 5));
-      // widget.onPlay(0);
-    });
-
     cachedNetworkImage = CachedNetworkImageProvider(widget.imageUrl)
       ..resolve(const ImageConfiguration())
           .addListener(ImageStreamListener((_, __) {
         WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-          // 5 second view time for image only story
-          widget.onLoad(const Duration(seconds: 5));
+          widget.onLoad(defaultStoryDuration);
           widget.onPlay(0);
         });
       }));
@@ -376,8 +380,7 @@ class _StoryTextPlayerState extends State<_StoryTextPlayer> {
     super.initState();
 
     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-      // 5 second view time for text only story
-      widget.onLoad(const Duration(seconds: 5));
+      widget.onLoad(defaultStoryDuration);
       widget.onPlay(0);
     });
   }
@@ -423,6 +426,8 @@ Widget storyGestureDetector({
           Expanded(
               child: GestureDetector(
             onTap: onLeftTap,
+            onLongPress: onLongPress,
+            onLongPressUp: onLongPressUp,
           )),
           Expanded(
             child: GestureDetector(
