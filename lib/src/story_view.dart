@@ -65,11 +65,10 @@ class _StoryViewState extends State<StoryView>
     super.dispose();
   }
 
-  _rewind() async {
-    // reset progressbar
-    animationController.reset();
-    // animationController.forward();
-  }
+  // _rewind() async {
+  //   // reset progressbar
+  //   animationController.reset();
+  // }
 
   _goToPrevious({BetterPlayerController? controller}) {
     // if (controller != null) {
