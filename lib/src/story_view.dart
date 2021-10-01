@@ -13,6 +13,7 @@ import 'loading_indicator.dart';
 import 'story_progress_bar.dart';
 
 const defaultStoryDuration = Duration(seconds: 5);
+// const rewindDuration = Duration(seconds: 2);
 
 // enum StoryEvents {
 //   leftTap,
@@ -64,17 +65,48 @@ class _StoryViewState extends State<StoryView>
     super.dispose();
   }
 
-  // TODO work in progress
-  // _rewind() {
-  //   // reset progressbar
-  //   animationController.reset();
-  //   animationController.forward();
-  // }
+  _rewind() async {
+    // reset progressbar
+    animationController.reset();
+    // animationController.forward();
+  }
 
-  _goToPrevious() {
+  _goToPrevious({BetterPlayerController? controller}) {
+    // if (controller != null) {
+    //   // story is video,
+    //   if ((controller.videoPlayerController?.value.position ??
+    //           const Duration(seconds: 0)) >
+    //       rewindDuration) {
+    //     // story is video & duration is more than a sec, rewind
+    //     controller.seekTo(const Duration(seconds: 0)).then((_) => _rewind());
+    //   } else if (indexToPlay > 0) {
+    //     // story is video & duration is less than a second, go to previous
+    //     setState(() {
+    //       animationController.reset();
+    //       animationController.stop();
+    //       indexToPlay = indexToPlay - 1;
+    //     });
+    //   }
+    // } else {
+    //   // story is not video
+    //   if ((animationController.lastElapsedDuration ??
+    //           const Duration(seconds: 0)) >
+    //       rewindDuration) {
+    //     // story is not video & duration is more than a sec, rewind
+    //     _rewind();
+    //   } else if (indexToPlay > 0) {
+    //     // story is video & duration is less than a second, go to previous
+    //     setState(() {
+    //       animationController.reset();
+    //       animationController.stop();
+    //       indexToPlay = indexToPlay - 1;
+    //     });
+    //   }
+    // }
     if (indexToPlay > 0) {
       setState(() {
         animationController.reset();
+        animationController.stop();
         indexToPlay = indexToPlay - 1;
       });
     }
@@ -84,6 +116,7 @@ class _StoryViewState extends State<StoryView>
     if (indexToPlay < widget.storyContents.length - 1) {
       setState(() {
         animationController.reset();
+        animationController.stop();
         indexToPlay = indexToPlay + 1;
       });
     }
@@ -214,7 +247,7 @@ class _StoryVideoPlayer extends StatefulWidget {
   final void Function() pauseProgressBar;
   final void Function() resumeProgressBar;
   final void Function() next;
-  final void Function() previous;
+  final void Function({BetterPlayerController controller}) previous;
 
   @override
   _StoryVideoPlayerState createState() => _StoryVideoPlayerState();
@@ -329,15 +362,6 @@ class _StoryImagePlayerState extends State<_StoryImagePlayer> {
           widget.onPlay(0);
         });
       });
-
-    // cachedNetworkImage = CachedNetworkImageProvider(widget.imageUrl)
-    //   ..resolve(const ImageConfiguration())
-    //       .addListener(ImageStreamListener((_, __) {
-    //     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-    //       widget.onLoad(defaultStoryDuration);
-    //       widget.onPlay(0);
-    //     });
-    //   }));
   }
 
   @override
@@ -363,28 +387,21 @@ class _StoryImagePlayerState extends State<_StoryImagePlayer> {
           return const LoadingIndicator();
         },
       ),
-      // child: CachedNetworkImage(
-      //   imageBuilder: (context, imageProvider) {
-      //     return Image(image: cachedNetworkImage);
-      //   },
-      //   imageUrl: widget.imageUrl,
-      //   placeholder: (_, __) => const LoadingIndicator(),
-      // ),
     );
   }
 }
 
 class _StoryTextPlayer extends StatefulWidget {
-  const _StoryTextPlayer(
-      {Key? key,
-      required this.content,
-      required this.onLoad,
-      required this.onPlay,
-      required this.pauseProgressBar,
-      required this.resumeProgressBar,
-      required this.next,
-      required this.previous})
-      : super(key: key);
+  const _StoryTextPlayer({
+    Key? key,
+    required this.content,
+    required this.onLoad,
+    required this.onPlay,
+    required this.pauseProgressBar,
+    required this.resumeProgressBar,
+    required this.next,
+    required this.previous,
+  }) : super(key: key);
 
   final String content;
 
