@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 import 'package:better_player/better_player.dart';
 
@@ -12,16 +11,9 @@ import '../flutter_story.dart';
 import 'loading_indicator.dart';
 import 'story_progress_bar.dart';
 
-const defaultStoryDuration = Duration(seconds: 5);
-// const rewindDuration = Duration(seconds: 2);
+import 'package:visibility_detector/visibility_detector.dart';
 
-// enum StoryEvents {
-//   leftTap,
-//   rightTap,
-//   hold,
-//   onPlay,
-//   onLoad,
-// }
+const defaultStoryDuration = Duration(seconds: 5);
 
 class StoryView extends StatefulWidget {
   const StoryView({Key? key, required this.storyContents}) : super(key: key);
@@ -65,43 +57,7 @@ class _StoryViewState extends State<StoryView>
     super.dispose();
   }
 
-  // _rewind() async {
-  //   // reset progressbar
-  //   animationController.reset();
-  // }
-
   _goToPrevious({BetterPlayerController? controller}) {
-    // if (controller != null) {
-    //   // story is video,
-    //   if ((controller.videoPlayerController?.value.position ??
-    //           const Duration(seconds: 0)) >
-    //       rewindDuration) {
-    //     // story is video & duration is more than a sec, rewind
-    //     controller.seekTo(const Duration(seconds: 0)).then((_) => _rewind());
-    //   } else if (indexToPlay > 0) {
-    //     // story is video & duration is less than a second, go to previous
-    //     setState(() {
-    //       animationController.reset();
-    //       animationController.stop();
-    //       indexToPlay = indexToPlay - 1;
-    //     });
-    //   }
-    // } else {
-    //   // story is not video
-    //   if ((animationController.lastElapsedDuration ??
-    //           const Duration(seconds: 0)) >
-    //       rewindDuration) {
-    //     // story is not video & duration is more than a sec, rewind
-    //     _rewind();
-    //   } else if (indexToPlay > 0) {
-    //     // story is video & duration is less than a second, go to previous
-    //     setState(() {
-    //       animationController.reset();
-    //       animationController.stop();
-    //       indexToPlay = indexToPlay - 1;
-    //     });
-    //   }
-    // }
     if (indexToPlay > 0) {
       setState(() {
         animationController.reset();
@@ -302,19 +258,33 @@ class _StoryVideoPlayerState extends State<_StoryVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return storyGestureDetector(
-      onLeftTap: widget.previous,
-      onRightTap: widget.next,
-      onLongPress: () async {
-        await betterPlayerController.pause();
-        widget.pauseProgressBar();
+    return VisibilityDetector(
+      onVisibilityChanged: (VisibilityInfo visibilityInfo) {
+        if (visibilityInfo.visibleFraction < 0.5) {
+          if (betterPlayerController.isPlaying() ?? false) {
+            betterPlayerController.pause();
+          }
+        } else {
+          if (!(betterPlayerController.isPlaying() ?? true)) {
+            betterPlayerController.play();
+          }
+        }
       },
-      onLongPressUp: () async {
-        await betterPlayerController.play();
-        widget.resumeProgressBar();
-      },
-      child: BetterPlayer(
-        controller: betterPlayerController,
+      key: UniqueKey(),
+      child: storyGestureDetector(
+        onLeftTap: widget.previous,
+        onRightTap: widget.next,
+        onLongPress: () async {
+          await betterPlayerController.pause();
+          widget.pauseProgressBar();
+        },
+        onLongPressUp: () async {
+          await betterPlayerController.play();
+          widget.resumeProgressBar();
+        },
+        child: BetterPlayer(
+          controller: betterPlayerController,
+        ),
       ),
     );
   }
